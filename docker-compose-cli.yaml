@@ -1,0 +1,169 @@
+version: '2'
+
+volumes:
+  orderer.orderermanagement.com:
+  peer0.audi.orderermanagement.com:
+  ca.audi.orderermanagement.com:
+  ca.bridgestone.orderermanagement.com:
+  ca.mrf.orderermanagement.com:
+  peer1.audi.orderermanagement.com:
+  peer0.bridgestone.orderermanagement.com:
+  peer1.bridgestone.orderermanagement.com:
+  peer0.mrf.orderermanagement.com:
+  peer1.mrf.orderermanagement.com:
+
+networks:
+  auto:
+
+services:
+
+  orderer.orderermanagement.com:
+    extends:
+      file:   base/docker-compose-base.yaml
+      service: orderer.orderermanagement.com
+    container_name: orderer.orderermanagement.com
+    networks:
+      - auto
+
+  peer0.audi.orderermanagement.com:
+    container_name: peer0.audi.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.audi.orderermanagement.com
+    networks:
+      - auto
+
+  peer1.audi.orderermanagement.com:
+    container_name: peer1.audi.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.audi.orderermanagement.com
+    networks:
+      - auto
+
+  peer0.bridgestone.orderermanagement.com:
+    container_name: peer0.bridgestone.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.bridgestone.orderermanagement.com
+    networks:
+      - auto
+
+  peer1.bridgestone.orderermanagement.com:
+    container_name: peer1.bridgestone.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.bridgestone.orderermanagement.com
+    networks:
+      - auto
+
+  peer0.mrf.orderermanagement.com:
+    container_name: peer0.mrf.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.mrf.orderermanagement.com
+    networks:
+      - auto
+
+  peer1.mrf.orderermanagement.com:
+    container_name: peer1.mrf.orderermanagement.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.mrf.orderermanagement.com
+    networks:
+      - auto
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:$IMAGE_TAG
+    tty: true
+    stdin_open: true
+    environment:
+      - SYS_CHANNEL=$SYS_CHANNEL
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      #- FABRIC_LOGGING_SPEC=DEBUG
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.audi.orderermanagement.com:7051
+      - CORE_PEER_LOCALMSPID=AudiMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/audi.orderermanagement.com/peers/peer0.audi.orderermanagement.com/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/audi.orderermanagement.com/peers/peer0.audi.orderermanagement.com/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/audi.orderermanagement.com/peers/peer0.audi.orderermanagement.com/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/audi.orderermanagement.com/users/Admin@audi.orderermanagement.com/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./chaincode/:/opt/gopath/src/github.com/chaincode
+        - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        # - ./scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
+        - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+    depends_on:
+      - orderer.orderermanagement.com
+      - peer0.audi.orderermanagement.com
+      - peer1.audi.orderermanagement.com
+      - peer0.bridgestone.orderermanagement.com
+      - peer1.bridgestone.orderermanagement.com
+      - peer0.mrf.orderermanagement.com
+      - peer1.mrf.orderermanagement.com
+    networks:
+      - auto
+
+  ca.audi.orderermanagement.com:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-audi
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.audi.orderermanagement.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/53d88fe0add7d1e32ebb38ac82d7bff756df6744c1f9406c4267d5e69d076ea2_sk
+      - FABRIC_CA_SERVER_PORT=7054
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.audi.orderermanagement.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/53d88fe0add7d1e32ebb38ac82d7bff756df6744c1f9406c4267d5e69d076ea2_sk -b admin:adminpw -d'
+    volumes:
+      - ./fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/audi.orderermanagement.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peeraudi
+    networks:
+      - auto
+
+  ca.bridgestone.orderermanagement.com:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-bridgestone
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.bridgestone.orderermanagement.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/4c242e445a8ab96b99723f32d3cca946318995f09d40d97c65625c34c11b0829_sk
+      - FABRIC_CA_SERVER_PORT=8054
+    ports:
+      - "8054:8054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.bridgestone.orderermanagement.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/4c242e445a8ab96b99723f32d3cca946318995f09d40d97c65625c34c11b0829_sk -b admin:adminpw -d'
+    volumes:
+      - ./fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/bridgestone.orderermanagement.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerbridgestone
+    networks:
+      - auto
+
+  ca.mrf.orderermanagement.com:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-mrf
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.mrf.orderermanagement.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/4f6e1517666c0100994a54184d3366454ff2278b52f7fa4427dcae8ec291cf90_sk
+      - FABRIC_CA_SERVER_PORT=9054
+    ports:
+      - "9054:9054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.mrf.orderermanagement.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/4f6e1517666c0100994a54184d3366454ff2278b52f7fa4427dcae8ec291cf90_sk -b admin:adminpw -d'
+    volumes:
+      - ./fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/mrf.orderermanagement.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peermrf
+    networks:
+      - auto
